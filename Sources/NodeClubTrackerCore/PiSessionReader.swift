@@ -73,6 +73,7 @@ public enum PiSessionReader {
         var allTime = PiUsage.zero
         var today = PiUsage.zero
         var byModel: [String: PiUsage] = [:]
+        var todayByModel: [String: PiUsage] = [:]
         var projects: [String: PiProjectUsage] = [:]
         var sessionCount = 0
 
@@ -100,7 +101,10 @@ public enum PiSessionReader {
 
             for turn in session.turns {
                 allTime += turn.usage
-                if turn.timestamp >= dayStart && turn.timestamp <= now { today += turn.usage }
+                if turn.timestamp >= dayStart && turn.timestamp <= now {
+                    today += turn.usage
+                    if let model = turn.model { todayByModel[model, default: .zero] += turn.usage }
+                }
                 if let model = turn.model { byModel[model, default: .zero] += turn.usage }
                 var project = projects[cwd]!
                 project.usage += turn.usage
@@ -116,6 +120,7 @@ public enum PiSessionReader {
             allTime: allTime,
             today: today,
             byModel: byModel,
+            todayByModel: todayByModel,
             byProject: byProject,
             sessionCount: sessionCount,
             collectedAt: now

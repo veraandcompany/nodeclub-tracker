@@ -81,6 +81,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
     public var allTime: PiUsage
     public var today: PiUsage
     public var byModel: [String: PiUsage]
+    public var todayByModel: [String: PiUsage]
     public var byProject: [PiProjectUsage]
     public var sessionCount: Int
     public var collectedAt: Date
@@ -89,6 +90,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         allTime: PiUsage,
         today: PiUsage,
         byModel: [String: PiUsage],
+        todayByModel: [String: PiUsage],
         byProject: [PiProjectUsage],
         sessionCount: Int,
         collectedAt: Date
@@ -96,6 +98,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         self.allTime = allTime
         self.today = today
         self.byModel = byModel
+        self.todayByModel = todayByModel
         self.byProject = byProject
         self.sessionCount = sessionCount
         self.collectedAt = collectedAt
@@ -105,6 +108,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         allTime: .zero,
         today: .zero,
         byModel: [:],
+        todayByModel: [:],
         byProject: [],
         sessionCount: 0,
         collectedAt: .distantPast

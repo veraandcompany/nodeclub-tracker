@@ -10,6 +10,9 @@ struct PiDashboardSection: View {
             agentsBlock
             if let snapshot = model.snapshot {
                 todayBlock(snapshot)
+                if snapshot.today.totalTokens > 0 {
+                    modelsBlock(snapshot)
+                }
                 projectsBlock(snapshot)
             } else {
                 Text("Loading pi stats…")
@@ -112,6 +115,34 @@ struct PiDashboardSection: View {
         }
         parts.append("\(usage.turnCount) turns")
         return parts.joined(separator: " · ")
+    }
+
+    // MARK: - Models
+
+    private func modelsBlock(_ snapshot: PiUsageSnapshot) -> some View {
+        let total = max(snapshot.today.totalTokens, 1)
+        let models = snapshot.todayByModel.sorted { $0.value.totalTokens > $1.value.totalTokens }
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Models")
+                .font(.headline)
+            ForEach(Array(models), id: \.key) { name, usage in
+                HStack {
+                    Text(name)
+                        .font(.callout)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(PiUsageFormat.tokens(usage.totalTokens))
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                    Text("\(Int((Double(usage.totalTokens) / Double(total) * 100).rounded()))%")
+                        .font(.caption)
+                        .monospacedDigit()
+                        .frame(width: 36, alignment: .trailing)
+                }
+                .padding(.vertical, 1)
+            }
+        }
     }
 
     // MARK: - Projects
