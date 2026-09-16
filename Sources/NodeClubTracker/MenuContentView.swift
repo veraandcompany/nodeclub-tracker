@@ -17,15 +17,11 @@ struct MenuContentView: View {
     }
 
     private var footer: some View {
-        HStack {
-            Text("\(AppInfo.name) \(AppInfo.shortVersion) (\(AppInfo.build))")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-            Spacer()
-            Button("Quit \(AppInfo.name)") { NSApplication.shared.terminate(nil) }
-                .font(.caption)
-        }
-        .padding([.horizontal, .bottom], 12)
-        .padding(.top, 4)
+        Text("\(AppInfo.name) \(AppInfo.shortVersion) (\(AppInfo.build))")
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding([.horizontal, .bottom], 12)
+            .padding(.top, 4)
     }
 }

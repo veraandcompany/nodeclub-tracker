@@ -5,11 +5,13 @@ import NodeClubTrackerCore
 struct PiDashboardSection: View {
     var model: PiDashboardModel
 
+    @State private var period: PiUsagePeriod = .day
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             agentsBlock
             if let snapshot = model.snapshot {
-                todayBlock(snapshot)
+                usageBlock(snapshot)
                 if snapshot.today.totalTokens > 0 {
                     modelsBlock(snapshot)
                 }
@@ -79,28 +81,41 @@ struct PiDashboardSection: View {
         .padding(.vertical, 1)
     }
 
-    // MARK: - Today
+    // MARK: - Usage (windowed)
 
-    private func todayBlock(_ snapshot: PiUsageSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Today")
-                .font(.headline)
+    private func usageBlock(_ snapshot: PiUsageSnapshot) -> some View {
+        let days = model.history.days
+        let now = snapshot.collectedAt
+        let usage = PiHistorySummary.period(period, days: days, now: now, calendar: .current)
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Usage")
+                    .font(.headline)
+                Picker("", selection: $period) {
+                    ForEach(PiUsagePeriod.allCases) { p in
+                        Text(p.rawValue).tag(p)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 190)
+            }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(PiUsageFormat.tokens(snapshot.today.totalTokens))
+                Text(PiUsageFormat.tokens(usage.totalTokens))
                     .font(.system(size: 30, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                 Text("tokens")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                let costText = PiUsageFormat.cost(snapshot.today.cost)
+                let costText = PiUsageFormat.cost(usage.cost)
                 if !costText.isEmpty {
                     Text(costText)
                         .font(.callout.weight(.medium))
                         .monospacedDigit()
                 }
             }
-            Text(detailLine(snapshot.today))
+            Text(detailLine(usage))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

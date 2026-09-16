@@ -50,6 +50,46 @@ final class PiHistoryTests: XCTestCase {
         XCTAssertEqual(month.totalTokens, 70)
     }
 
+    // MARK: - Period (day / month / year)
+
+    func test_periodDayReturnsCurrentDayOnly() {
+        let days = [
+            "2026-09-16": Self.tokens(100),
+            "2026-09-15": Self.tokens(50),
+        ]
+        let day = PiHistorySummary.period(.day, days: days, now: Self.now, calendar: Self.utcCalendar)
+        XCTAssertEqual(day.totalTokens, 100)
+    }
+
+    func test_periodMonthSumsCurrentMonthOnly() {
+        let days = [
+            "2026-09-16": Self.tokens(10),
+            "2026-09-06": Self.tokens(20), // same month
+            "2026-08-30": Self.tokens(100), // previous month: excluded
+        ]
+        let month = PiHistorySummary.period(.month, days: days, now: Self.now, calendar: Self.utcCalendar)
+        XCTAssertEqual(month.totalTokens, 30)
+    }
+
+    func test_periodYearSumsCurrentYearOnly() {
+        let days = [
+            "2026-09-16": Self.tokens(10),
+            "2026-08-30": Self.tokens(20),
+            "2025-12-31": Self.tokens(500), // previous year: excluded
+        ]
+        let year = PiHistorySummary.period(.year, days: days, now: Self.now, calendar: Self.utcCalendar)
+        XCTAssertEqual(year.totalTokens, 30)
+    }
+
+    func test_periodEmptyHistoryIsZero() {
+        let day = PiHistorySummary.period(.day, days: [:], now: Self.now, calendar: Self.utcCalendar)
+        let month = PiHistorySummary.period(.month, days: [:], now: Self.now, calendar: Self.utcCalendar)
+        let year = PiHistorySummary.period(.year, days: [:], now: Self.now, calendar: Self.utcCalendar)
+        XCTAssertEqual(day, .zero)
+        XCTAssertEqual(month, .zero)
+        XCTAssertEqual(year, .zero)
+    }
+
     // MARK: - Merge
 
     func test_mergedLiveWinsAndPrunesOld() {

@@ -60,6 +60,15 @@ public struct PiDayPoint: Identifiable, Sendable, Equatable {
     }
 }
 
+/// Usage window selectable in the popover.
+public enum PiUsagePeriod: String, CaseIterable, Identifiable, Sendable {
+    case day = "Today"
+    case month = "Month"
+    case year = "Year"
+
+    public var id: String { rawValue }
+}
+
 /// Pure history math: charts, windows, and the live/persisted merge.
 public enum PiHistorySummary {
     /// Last `length` days old-to-new, zero-filled for days without data.
@@ -93,6 +102,28 @@ public enum PiHistorySummary {
     ) -> PiUsage {
         series(days: days, length: length, now: now, calendar: calendar)
             .reduce(.zero) { $0 + $1.usage }
+    }
+
+    /// Summed usage for the current day/month/year. Day keys are "yyyy-MM-dd",
+    /// so month/year scopes are simple prefix filters.
+    public static func period(
+        _ period: PiUsagePeriod,
+        days: [String: PiUsage],
+        now: Date,
+        calendar: Calendar
+    ) -> PiUsage {
+        switch period {
+        case .day:
+            return days[PiDayKey.string(for: now, calendar: calendar)] ?? .zero
+        case .month:
+            let components = calendar.dateComponents([.year, .month], from: now)
+            let prefix = String(format: "%04d-%02d", components.year ?? 0, components.month ?? 0)
+            return days.filter { $0.key.hasPrefix(prefix) }.values.reduce(.zero) { $0 + $1 }
+        case .year:
+            let components = calendar.dateComponents([.year], from: now)
+            let prefix = String(format: "%04d", components.year ?? 0)
+            return days.filter { $0.key.hasPrefix(prefix) }.values.reduce(.zero) { $0 + $1 }
+        }
     }
 
     /// Merge the live per-day rollup over persisted history, pruned to the
