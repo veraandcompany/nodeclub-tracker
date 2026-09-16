@@ -24,7 +24,7 @@
 
 ## Testing Guidelines
 - Tests live in `Tests/TaskbarCoreTests/*Tests.swift`, named `FeatureNameTests` with `test_caseDescription` methods.
-- Never let tests touch shared `UserDefaults.standard` state — inject a suite-named `UserDefaults` per test.
+- Never let tests touch shared user state (defaults suites, `~/.pi`); inject isolated paths/suites.
 - Prefer core/model tests over UI tests. macOS UI automation is brittle; test state seams, not pixels.
 - Run `swift test` before handoff.
 

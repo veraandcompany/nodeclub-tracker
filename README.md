@@ -5,14 +5,14 @@ SwiftPM package (no .xcodeproj), a testable core target, an app target, and a sc
 
 ## What it does (so far)
 
-A pi-agent dashboard in the macOS menu bar (top right), plus a placeholder task list:
+A pi-agent dashboard in the macOS menu bar (top right):
 
 - **Menu bar label**: terminal icon, live time, and a green dot while any pi agent is working.
 - **Popover**:
   - **Pi agents** — live agents from `herdr api snapshot` (working/idle, project, tab label).
   - **Today** — tokens + cost + turn count across all pi sessions.
   - **Projects** — per-project token/cost rollup, most recent first (top 5).
-  - **Tasks** — small persisted to-do list (placeholder feature; may be replaced).
+  - Footer with clock, version, and quit.
 
 ### pi-agent data sources (read-only, never write to `~/.pi`)
 
@@ -40,12 +40,12 @@ make clean     # remove .build/ and Taskbar.app
 
 ```
 Package.swift                  # swift-tools 6.2, macOS 15+, Swift 6 strict concurrency
-Sources/TaskbarCore/           # pure logic: TaskItem/TaskStore, Clock, PiUsage, PiSessionReader, PiAgentMonitor, PiDashboardModel
+Sources/TaskbarCore/           # pure logic: Clock, PiUsage, PiSessionReader, PiAgentMonitor, PiDashboardModel
 Sources/Taskbar/               # SwiftUI app: MenuBarExtra scene + popover views
 Config/Info.plist              # bundle metadata (LSUIElement = true → no Dock icon)
 Scripts/package_app.sh         # assemble Taskbar.app from the build product
 Scripts/compile_and_run.sh     # dev loop: kill → build → package → launch → verify
-Tests/TaskbarCoreTests/        # XCTest: store, clock formatting, ticker (Swift Testing once Xcode toolchain is active)
+Tests/TaskbarCoreTests/        # XCTest: pi session parser, herdr snapshot, clock formatting (Swift Testing once Xcode toolchain is active)
 Makefile                       # build / test / start / stop / restart / clean
 AGENTS.md                      # project conventions (for humans and agents)
 ```

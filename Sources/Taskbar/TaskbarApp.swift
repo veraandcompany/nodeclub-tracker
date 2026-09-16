@@ -5,7 +5,6 @@ import TaskbarCore
 struct TaskbarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var clock = ClockTicker()
-    @State private var tasks = TaskStore()
     @State private var pi = PiDashboardModel()
 
     init() {
@@ -16,7 +15,7 @@ struct TaskbarApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContentView(clock: clock, tasks: tasks, pi: pi)
+            MenuContentView(clock: clock, pi: pi)
         } label: {
             StatusItemLabel(clock: clock, pi: pi)
         }
