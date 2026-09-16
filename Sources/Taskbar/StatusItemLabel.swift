@@ -1,9 +1,8 @@
 import SwiftUI
 import TaskbarCore
 
-/// What shows in the menu bar itself: icon, live-time, green dot when an agent is working.
+/// What shows in the menu bar itself: icon, with a green dot while an agent is working.
 struct StatusItemLabel: View {
-    var clock: ClockTicker
     var pi: PiDashboardModel
 
     var body: some View {
@@ -14,8 +13,6 @@ struct StatusItemLabel: View {
                     .fill(Color.green)
                     .frame(width: 6, height: 6)
             }
-            Text(ClockText.menuBarTime(at: clock.now))
-                .monospacedDigit()
         }
     }
 }

@@ -3,7 +3,6 @@ import TaskbarCore
 
 /// Popover content: pi dashboard + footer.
 struct MenuContentView: View {
-    var clock: ClockTicker
     var pi: PiDashboardModel
 
     var body: some View {
@@ -19,14 +18,9 @@ struct MenuContentView: View {
 
     private var footer: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(ClockText.popoverTime(at: clock.now))
-                    .font(.caption)
-                    .monospacedDigit()
-                Text("\(AppInfo.name) \(AppInfo.shortVersion) (\(AppInfo.build))")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
+            Text("\(AppInfo.name) \(AppInfo.shortVersion) (\(AppInfo.build))")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
             Spacer()
             Button("Quit \(AppInfo.name)") { NSApplication.shared.terminate(nil) }
                 .font(.caption)
