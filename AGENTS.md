@@ -4,6 +4,7 @@
 - `Sources/NodeClubTrackerCore`: pure Swift logic — models, stores, formatting. No UI imports; must stay testable without a running app.
 - `Sources/NodeClubTracker`: the menu bar app — SwiftUI scenes and views only. No business logic here; views call into `NodeClubTrackerCore`.
 - pi data is **read-only**: session JSONL under `~/.pi/agent/sessions` (override `PI_SESSION_DIR`) and `herdr api snapshot` (override `HERDR_BIN`). Never write to `~/.pi` or send commands to herdr.
+- The app's own writable state lives in `~/.nodeclub-tracker/` (usage history JSON, override `PI_HISTORY_FILE`). History is a backfill: the live session scan wins for days it covers.
 - pi usage parsing lives in `NodeClubTrackerCore` as pure functions over JSONL lines; wire-format structs are private and map only the fields we need (assistant `usage` + `cwd` + entry `timestamp`).
 - `Tests/NodeClubTrackerCoreTests`: XCTest coverage for core behavior; mirror new core logic with focused tests. (XCTest for now — the active toolchain is Command Line Tools, which doesn't ship Swift Testing. Revisit Swift Testing once Xcode's toolchain is the active developer dir.)
 - `Scripts`: build/package helpers. `compile_and_run.sh` is the dev loop (kill, build, package, relaunch, verify). `package_app.sh` assembles `NodeClubTracker.app` from the SwiftPM product.

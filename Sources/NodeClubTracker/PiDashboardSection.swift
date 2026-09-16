@@ -13,6 +13,7 @@ struct PiDashboardSection: View {
                 if snapshot.today.totalTokens > 0 {
                     modelsBlock(snapshot)
                 }
+                historyBlock(snapshot)
                 projectsBlock(snapshot)
             } else {
                 Text("Loading pi stats…")
@@ -143,6 +144,57 @@ struct PiDashboardSection: View {
                 .padding(.vertical, 1)
             }
         }
+    }
+
+    // MARK: - History
+
+    private func historyBlock(_ snapshot: PiUsageSnapshot) -> some View {
+        let days = model.history.days
+        let now = snapshot.collectedAt
+        let calendar = Calendar.current
+        let points = PiHistorySummary.series(days: days, length: 14, now: now, calendar: calendar)
+        let week = PiHistorySummary.window(days: days, length: 7, now: now, calendar: calendar)
+        let month = PiHistorySummary.window(days: days, length: 30, now: now, calendar: calendar)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("History")
+                    .font(.headline)
+                Spacer()
+                Text(
+                    "7d \(PiUsageFormat.tokens(week.totalTokens)) · 30d \(PiUsageFormat.tokens(month.totalTokens))"
+                )
+                .font(.caption)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+            }
+            chartBars(points)
+            HStack {
+                Text(points.first?.label ?? "")
+                Spacer()
+                Text("last 14 days")
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Text(points.last?.label ?? "")
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private func chartBars(_ points: [PiDayPoint]) -> some View {
+        let maxTokens = points.map(\.usage.totalTokens).max() ?? 0
+        let todayKey = points.last?.key
+        return HStack(alignment: .bottom, spacing: 3) {
+            ForEach(points) { point in
+                let ratio = maxTokens == 0 ? 0 : CGFloat(point.usage.totalTokens) / CGFloat(maxTokens)
+                let height = max(2, ratio * 28)
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(point.key == todayKey ? Color.green : Color.secondary.opacity(0.4))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: height)
+            }
+        }
+        .frame(height: 28, alignment: .bottom)
     }
 
     // MARK: - Projects

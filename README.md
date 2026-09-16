@@ -11,6 +11,8 @@ A pi-agent dashboard in the macOS menu bar (top right):
 - **Popover**:
   - **Pi agents** — live agents from `herdr api snapshot` (working/idle, project, tab label).
   - **Today** — tokens + cost + turn count across all pi sessions.
+  - **Models** — today's usage by model, with share %.
+  - **History** — 7d/30d token sums + 14-day bar chart (daily rollup persisted to `~/.nodeclub-tracker/history.json`, 90-day retention).
   - **Projects** — per-project token/cost rollup, most recent first (top 5).
   - Footer with version and quit.
 

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Additive token/cost totals from pi-agent session files.
-public struct PiUsage: Sendable, Equatable {
+public struct PiUsage: Sendable, Codable, Equatable {
     public var input: Int
     public var output: Int
     public var cacheRead: Int
@@ -82,6 +82,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
     public var today: PiUsage
     public var byModel: [String: PiUsage]
     public var todayByModel: [String: PiUsage]
+    public var byDay: [String: PiUsage]
     public var byProject: [PiProjectUsage]
     public var sessionCount: Int
     public var collectedAt: Date
@@ -91,6 +92,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         today: PiUsage,
         byModel: [String: PiUsage],
         todayByModel: [String: PiUsage],
+        byDay: [String: PiUsage],
         byProject: [PiProjectUsage],
         sessionCount: Int,
         collectedAt: Date
@@ -99,6 +101,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         self.today = today
         self.byModel = byModel
         self.todayByModel = todayByModel
+        self.byDay = byDay
         self.byProject = byProject
         self.sessionCount = sessionCount
         self.collectedAt = collectedAt
@@ -109,6 +112,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         today: .zero,
         byModel: [:],
         todayByModel: [:],
+        byDay: [:],
         byProject: [],
         sessionCount: 0,
         collectedAt: .distantPast

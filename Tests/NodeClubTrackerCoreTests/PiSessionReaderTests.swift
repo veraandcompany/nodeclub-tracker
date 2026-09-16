@@ -64,6 +64,9 @@ final class PiSessionReaderTests: XCTestCase {
         // Today-only per model: the yesterday turn is excluded.
         XCTAssertEqual(snapshot.todayByModel["qwen3.8-27b"]?.totalTokens, 150)
         XCTAssertNil(snapshot.todayByModel["other-model"])
+        // Per day.
+        XCTAssertEqual(snapshot.byDay["2026-09-16"]?.totalTokens, 150)
+        XCTAssertEqual(snapshot.byDay["2026-09-15"]?.totalTokens, 10)
         // One project.
         XCTAssertEqual(snapshot.byProject.count, 1)
         XCTAssertEqual(snapshot.byProject[0].name, "projA")

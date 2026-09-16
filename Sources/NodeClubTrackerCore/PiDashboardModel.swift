@@ -11,25 +11,38 @@ import Observation
 public final class PiDashboardModel {
     public private(set) var agents: [PiAgentMonitor.Agent] = []
     public private(set) var snapshot: PiUsageSnapshot?
+    public private(set) var history: PiUsageHistory
     public private(set) var lastRefresh: Date?
     private var autoRefreshTask: Task<Void, Never>?
 
-    public init() {}
+    public init() {
+        self.history = PiUsageHistory()
+    }
 
     public var workingCount: Int { agents.count { $0.status == .working } }
     public var idleCount: Int { agents.count { $0.status == .idle } }
 
     public func refresh() async {
         let sessionsDir = PiSessionReader.defaultSessionsDir
+        let historyFile = PiHistoryStore.defaultFileURL
         let now = Date()
+        let calendar = Calendar.current
         let result = await Task.detached(priority: .utility) {
-            (
-                PiSessionReader.snapshot(sessionsDir: sessionsDir, now: now),
-                PiAgentMonitor.fetchAgents()
+            let snapshot = PiSessionReader.snapshot(sessionsDir: sessionsDir, now: now)
+            let persisted = PiHistoryStore.load(url: historyFile)
+            let merged = PiHistorySummary.merged(
+                live: snapshot.byDay,
+                with: persisted,
+                retainedDays: 90,
+                now: now,
+                calendar: calendar
             )
+            PiHistoryStore.save(merged, to: historyFile)
+            return (snapshot, merged, PiAgentMonitor.fetchAgents())
         }.value
         self.snapshot = result.0
-        self.agents = result.1
+        self.history = result.1
+        self.agents = result.2
         self.lastRefresh = now
     }
 
