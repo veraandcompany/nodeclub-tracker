@@ -5,14 +5,24 @@ SwiftPM package (no .xcodeproj), a testable core target, an app target, and a sc
 
 ## What it does (so far)
 
-- Shows a checklist icon + live time in the macOS menu bar (top right).
-- Clicking it opens a popover with:
-  - a live clock (time + date),
-  - a small persisted task list (add, complete, remove, clear completed),
-  - version footer + quit.
+A pi-agent dashboard in the macOS menu bar (top right), plus a placeholder task list:
 
-Tasks persist via `UserDefaults` across relaunches. This is a skeleton — the task list is a
-placeholder feature giving the model/store/view layer something real to iterate on.
+- **Menu bar label**: terminal icon, live time, and a green dot while any pi agent is working.
+- **Popover**:
+  - **Pi agents** — live agents from `herdr api snapshot` (working/idle, project, tab label).
+  - **Today** — tokens + cost + turn count across all pi sessions.
+  - **Projects** — per-project token/cost rollup, most recent first (top 5).
+  - **Tasks** — small persisted to-do list (placeholder feature; may be replaced).
+
+### pi-agent data sources (read-only, never write to `~/.pi`)
+
+- **Usage**: session files at `~/.pi/agent/sessions/<project>/*.jsonl` (override: `PI_SESSION_DIR`).
+  Each assistant message carries `usage {input, output, cacheRead, cacheWrite, reasoning, totalTokens, cost}`
+  + `model`/`provider`; the session header carries `cwd` → per-project grouping. Format: `docs/session-format.md` of pi-coding-agent.
+- **Live agents**: `herdr api snapshot` (override: `HERDR_BIN`). Packaged apps have a minimal PATH, so
+  candidates are `~/.local/bin/herdr`, `/opt/homebrew/bin/herdr`, `/usr/local/bin/herdr`. If herdr's server
+  is not running, the agents section degrades to "No agents detected".
+- **Refresh**: every 20s + on popover open; all I/O runs off the main actor.
 
 ## Dev loop
 
@@ -30,7 +40,7 @@ make clean     # remove .build/ and Taskbar.app
 
 ```
 Package.swift                  # swift-tools 6.2, macOS 15+, Swift 6 strict concurrency
-Sources/TaskbarCore/           # pure logic: TaskItem, TaskStore, Clock, ClockTicker, AppInfo
+Sources/TaskbarCore/           # pure logic: TaskItem/TaskStore, Clock, PiUsage, PiSessionReader, PiAgentMonitor, PiDashboardModel
 Sources/Taskbar/               # SwiftUI app: MenuBarExtra scene + popover views
 Config/Info.plist              # bundle metadata (LSUIElement = true → no Dock icon)
 Scripts/package_app.sh         # assemble Taskbar.app from the build product
