@@ -115,7 +115,7 @@ public enum PiAgentMonitor {
         final class DataBox: @unchecked Sendable { var data: Data? }
         let box = DataBox()
         let semaphore = DispatchSemaphore(value: 0)
-        let queue = DispatchQueue(label: "taskbar.herdr-stdout")
+        let queue = DispatchQueue(label: "nodeclubtracker.herdr-stdout")
         queue.async {
             box.data = pipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()

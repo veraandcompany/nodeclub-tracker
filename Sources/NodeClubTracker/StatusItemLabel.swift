@@ -1,5 +1,5 @@
 import SwiftUI
-import TaskbarCore
+import NodeClubTrackerCore
 
 /// What shows in the menu bar itself: icon, with a green dot while an agent is working.
 struct StatusItemLabel: View {

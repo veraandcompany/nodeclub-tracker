@@ -1,5 +1,5 @@
 import Foundation
-import TaskbarCore
+import NodeClubTrackerCore
 import XCTest
 
 final class PiUsageTests: XCTestCase {

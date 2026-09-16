@@ -4,7 +4,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_NAME="Taskbar"
+APP_NAME="NodeClubTracker"
 
 pkill -x "$APP_NAME" 2>/dev/null || true
 sleep 0.3

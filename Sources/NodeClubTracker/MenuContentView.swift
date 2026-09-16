@@ -1,5 +1,5 @@
 import SwiftUI
-import TaskbarCore
+import NodeClubTrackerCore
 
 /// Popover content: pi dashboard + footer.
 struct MenuContentView: View {

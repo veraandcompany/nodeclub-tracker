@@ -1,10 +1,10 @@
 #!/bin/bash
-# Assemble Taskbar.app from the SwiftPM build product.
+# Assemble NodeClubTracker.app from the SwiftPM build product.
 # Usage: ./Scripts/package_app.sh [debug|release]
 set -euo pipefail
 
 CONFIG="${1:-debug}"
-APP_NAME="Taskbar"
+APP_NAME="NodeClubTracker"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 (cd "$ROOT" && swift build -c "$CONFIG" --show-bin-path >/dev/null 2>&1 || true)

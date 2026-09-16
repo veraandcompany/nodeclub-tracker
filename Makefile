@@ -13,13 +13,13 @@ start:
 
 start-release:
 	./Scripts/package_app.sh release
-	pkill -x Taskbar || true
-	open -n ./Taskbar.app
+	pkill -x NodeClubTracker || true
+	open -n ./NodeClubTracker.app
 
 stop:
-	pkill -x Taskbar || true
+	pkill -x NodeClubTracker || true
 
 restart: start
 
 clean:
-	rm -rf .build Taskbar.app
+	rm -rf .build NodeClubTracker.app

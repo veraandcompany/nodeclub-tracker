@@ -1,5 +1,5 @@
 import SwiftUI
-import TaskbarCore
+import NodeClubTrackerCore
 
 /// The pi-agent dashboard: live agents, today's usage, per-project rollup.
 struct PiDashboardSection: View {

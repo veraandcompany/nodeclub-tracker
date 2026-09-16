@@ -1,4 +1,4 @@
-# Taskbar
+# NodeClub Tracker
 
 A minimal macOS menu bar app built in SwiftUI, structured after [CodexBar](https://github.com/steipete/codexbar):
 SwiftPM package (no .xcodeproj), a testable core target, an app target, and a script-driven dev loop.
@@ -27,11 +27,11 @@ A pi-agent dashboard in the macOS menu bar (top right):
 ## Dev loop
 
 ```bash
-make start     # kill, build (debug), package Taskbar.app, relaunch, verify
+make start     # kill, build (debug), package NodeClubTracker.app, relaunch, verify
 make stop      # quit the app
 make test      # run the Swift Testing suite
 make build     # swift build only
-make clean     # remove .build/ and Taskbar.app
+make clean     # remove .build/ and NodeClubTracker.app
 ```
 
 `make start` = `./Scripts/compile_and_run.sh` — the same pattern CodexBar uses.
@@ -40,19 +40,19 @@ make clean     # remove .build/ and Taskbar.app
 
 ```
 Package.swift                  # swift-tools 6.2, macOS 15+, Swift 6 strict concurrency
-Sources/TaskbarCore/           # pure logic: PiUsage, PiSessionReader, PiAgentMonitor, PiDashboardModel, AppInfo
-Sources/Taskbar/               # SwiftUI app: MenuBarExtra scene + popover views
+Sources/NodeClubTrackerCore/           # pure logic: PiUsage, PiSessionReader, PiAgentMonitor, PiDashboardModel, AppInfo
+Sources/NodeClubTracker/               # SwiftUI app: MenuBarExtra scene + popover views
 Config/Info.plist              # bundle metadata (LSUIElement = true → no Dock icon)
-Scripts/package_app.sh         # assemble Taskbar.app from the build product
+Scripts/package_app.sh         # assemble NodeClubTracker.app from the build product
 Scripts/compile_and_run.sh     # dev loop: kill → build → package → launch → verify
-Tests/TaskbarCoreTests/        # XCTest: pi session parser, herdr snapshot, usage formatting (Swift Testing once Xcode toolchain is active)
+Tests/NodeClubTrackerCoreTests/        # XCTest: pi session parser, herdr snapshot, usage formatting (Swift Testing once Xcode toolchain is active)
 Makefile                       # build / test / start / stop / restart / clean
 AGENTS.md                      # project conventions (for humans and agents)
 ```
 
 ## Design notes
 
-- **Core/app split**: everything testable lives in `TaskbarCore` with zero UI imports; the app
+- **Core/app split**: everything testable lives in `NodeClubTrackerCore` with zero UI imports; the app
   target is thin SwiftUI. New features land in core first, get tested, then get a view.
 - **Modern SwiftUI**: `@Observable` + `@State` ownership, `MenuBarExtra` with `.window` style.
 - **Strict concurrency**: Swift 6 language mode; no `@unchecked Sendable` escape hatches.

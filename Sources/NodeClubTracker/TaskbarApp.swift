@@ -1,8 +1,8 @@
 import SwiftUI
-import TaskbarCore
+import NodeClubTrackerCore
 
 @main
-struct TaskbarApp: App {
+struct NodeClubTrackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var pi = PiDashboardModel()
 

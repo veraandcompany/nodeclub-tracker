@@ -2,34 +2,34 @@
 import PackageDescription
 
 let package = Package(
-    name: "Taskbar",
+    name: "NodeClubTracker",
     defaultLocalization: "en",
     platforms: [
         .macOS(.v15),
     ],
     products: [
-        .library(name: "TaskbarCore", targets: ["TaskbarCore"]),
-        .executable(name: "Taskbar", targets: ["Taskbar"]),
+        .library(name: "NodeClubTrackerCore", targets: ["NodeClubTrackerCore"]),
+        .executable(name: "NodeClubTracker", targets: ["NodeClubTracker"]),
     ],
     targets: [
         // Pure logic: models, stores, formatting. No UI imports; runs anywhere and tests fast.
         .target(
-            name: "TaskbarCore",
+            name: "NodeClubTrackerCore",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]
         ),
         // The menu bar app itself: SwiftUI scenes + views only.
         .executableTarget(
-            name: "Taskbar",
-            dependencies: ["TaskbarCore"],
+            name: "NodeClubTracker",
+            dependencies: ["NodeClubTrackerCore"],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]
         ),
         .testTarget(
-            name: "TaskbarCoreTests",
-            dependencies: ["TaskbarCore"],
+            name: "NodeClubTrackerCoreTests",
+            dependencies: ["NodeClubTrackerCore"],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]

@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>Taskbar</string>
+	<string>NodeClubTracker</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.nodebuildai.taskbar</string>
+	<string>com.nodeclub.tracker</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Taskbar</string>
+	<string>NodeClubTracker</string>
 	<key>CFBundleDisplayName</key>
-	<string>Taskbar</string>
+	<string>NodeClub Tracker</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
