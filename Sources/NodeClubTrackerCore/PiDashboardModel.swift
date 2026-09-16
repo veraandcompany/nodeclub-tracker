@@ -9,7 +9,7 @@ import Observation
 @MainActor
 @Observable
 public final class PiDashboardModel {
-    public private(set) var agents: [PiAgentMonitor.Agent] = []
+    public private(set) var agents: [PiAgent] = []
     public private(set) var snapshot: PiUsageSnapshot?
     public private(set) var history: PiUsageHistory
     public private(set) var lastRefresh: Date?
@@ -38,7 +38,7 @@ public final class PiDashboardModel {
                 calendar: calendar
             )
             PiHistoryStore.save(merged, to: historyFile)
-            return (snapshot, merged, PiAgentMonitor.fetchAgents())
+            return (snapshot, merged, PiSessionWatcher.findAgents(sessionsDir: sessionsDir, now: now))
         }.value
         self.snapshot = result.0
         self.history = result.1

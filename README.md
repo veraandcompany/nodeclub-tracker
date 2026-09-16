@@ -9,7 +9,7 @@ A pi-agent dashboard in the macOS menu bar (top right):
 
 - **Menu bar label**: terminal icon, with a green dot while any pi agent is working.
 - **Popover**:
-  - **Pi agents** — live agents from `herdr api snapshot` (working/idle, project, tab label).
+  - **Pi agents** — live agents from session-file activity (working = touched in the last 2 min, idle = last 30 min). Works for pi inside herdr or in a bare terminal.
   - **Usage** — tokens + cost + turns, switchable between Today / Month / Year.
   - **Models** — today's usage by model, with share %.
   - **History** — 7d/30d token sums + 14-day bar chart (daily rollup persisted to `~/.nodeclub-tracker/history.json`, 90-day retention).
@@ -21,9 +21,7 @@ A pi-agent dashboard in the macOS menu bar (top right):
 - **Usage**: session files at `~/.pi/agent/sessions/<project>/*.jsonl` (override: `PI_SESSION_DIR`).
   Each assistant message carries `usage {input, output, cacheRead, cacheWrite, reasoning, totalTokens, cost}`
   + `model`/`provider`; the session header carries `cwd` → per-project grouping. Format: `docs/session-format.md` of pi-coding-agent.
-- **Live agents**: `herdr api snapshot` (override: `HERDR_BIN`). Packaged apps have a minimal PATH, so
-  candidates are `~/.local/bin/herdr`, `/opt/homebrew/bin/herdr`, `/usr/local/bin/herdr`. If herdr's server
-  is not running, the agents section degrades to "No agents detected".
+- **Live agents**: the same session files, by modification time — pi appends as it works.
 - **Refresh**: every 20s + on popover open; all I/O runs off the main actor.
 
 ## Dev loop
@@ -42,12 +40,12 @@ make clean     # remove .build/ and NodeClubTracker.app
 
 ```
 Package.swift                  # swift-tools 6.2, macOS 15+, Swift 6 strict concurrency
-Sources/NodeClubTrackerCore/           # pure logic: PiUsage, PiSessionReader, PiAgentMonitor, PiDashboardModel, AppInfo
+Sources/NodeClubTrackerCore/           # pure logic: PiUsage, PiSessionReader, PiSessionWatcher, PiHistory, PiDashboardModel, AppInfo
 Sources/NodeClubTracker/               # SwiftUI app: MenuBarExtra scene + popover views
 Config/Info.plist              # bundle metadata (LSUIElement = true → no Dock icon)
 Scripts/package_app.sh         # assemble NodeClubTracker.app from the build product
 Scripts/compile_and_run.sh     # dev loop: kill → build → package → launch → verify
-Tests/NodeClubTrackerCoreTests/        # XCTest: pi session parser, herdr snapshot, usage formatting (Swift Testing once Xcode toolchain is active)
+Tests/NodeClubTrackerCoreTests/        # XCTest: pi session parser, session watcher, history, usage formatting (Swift Testing once Xcode toolchain is active)
 Makefile                       # build / test / start / stop / restart / clean
 AGENTS.md                      # project conventions (for humans and agents)
 ```

@@ -5,7 +5,8 @@ import NodeClubTrackerCore
 struct PiDashboardSection: View {
     var model: PiDashboardModel
 
-    @State private var period: PiUsagePeriod = .day
+    /// Persisted so the user's view choice survives relaunches.
+    @AppStorage("usagePeriod") private var period: PiUsagePeriod = .day
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -59,24 +60,23 @@ struct PiDashboardSection: View {
         }
     }
 
-    private func agentRow(_ agent: PiAgentMonitor.Agent) -> some View {
-        HStack(spacing: 8) {
+    private func agentRow(_ agent: PiAgent) -> some View {
+        let now = model.lastRefresh ?? Date()
+        return HStack(spacing: 8) {
             Circle()
                 .fill(agent.status == .working ? Color.green : Color.secondary.opacity(0.5))
                 .frame(width: 7, height: 7)
             Text(agent.project)
                 .font(.callout)
                 .lineLimit(1)
-            if let label = agent.label, label != agent.project {
-                Text("· \(label)")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-            }
             Spacer()
             Text(agent.status == .working ? "working" : "idle")
                 .font(.caption)
                 .foregroundStyle(agent.status == .working ? Color.green : Color.secondary)
+            Text(RelativeTime.ago(from: agent.lastActivity, now: now))
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .frame(width: 64, alignment: .trailing)
         }
         .padding(.vertical, 1)
     }
