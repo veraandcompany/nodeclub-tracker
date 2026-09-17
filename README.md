@@ -61,7 +61,7 @@ None. The app reads files in your own home directory that it has normal access t
 ```bash
 make start     # kill, build (debug), package NodeClubTracker.app, relaunch, verify
 make stop      # quit the app
-make test      # run the core test suite
+make test      # run the core test suite (needs the Xcode toolchain — see note below)
 make build     # swift build only
 make clean     # remove .build/ and NodeClubTracker.app
 ```
@@ -79,7 +79,7 @@ Scripts/                       # compile_and_run.sh, package_app.sh
 Tests/NodeClubTrackerCoreTests/# XCTest: session parser, session watcher, history, usage formatting
 ```
 
-Tests are XCTest (same as CodexBar's main suite) so they run under the CommandLineTools toolchain; migrating to Swift Testing is a later option once Xcode is active.
+Tests are XCTest (same as CodexBar's main suite). Heads-up: `swift test` is currently blocked on this machine — the active developer toolchain is CommandLineTools, which ships without the test frameworks. It runs once Xcode is active (`sudo xcodebuild -license` to accept the Xcode license, then re-select Xcode as the developer dir). The suite itself is written and ready; migrating to Swift Testing is a later option.
 
 ## Credits
 
