@@ -89,7 +89,7 @@ public enum PiSessionReader {
         providers: Set<String>? = nil,
         now: Date = Date(),
         calendar: Calendar = .current
-    ) -> PiUsageSnapshot {
+    ) -> UsageSnapshot {
         let fileManager = FileManager.default
         let providerFilter = providers ?? Self.providers
         let dayStart = calendar.startOfDay(for: now)
@@ -147,7 +147,7 @@ public enum PiSessionReader {
         let byProject = projects.values.sorted {
             ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast)
         }
-        return PiUsageSnapshot(
+        return UsageSnapshot(
             allTime: allTime,
             today: today,
             byModel: byModel,

@@ -17,6 +17,9 @@ let package = Package(
             name: "NodeClubTrackerCore",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedLibrary("sqlite3"),
             ]
         ),
         // The menu bar app itself: SwiftUI scenes + views only.

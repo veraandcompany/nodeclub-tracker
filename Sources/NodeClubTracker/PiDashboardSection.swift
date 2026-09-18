@@ -97,7 +97,20 @@ struct PiDashboardSection: View {
         .foregroundStyle(.tertiary)
     }
 
-    private func usageBlock(_ snapshot: PiUsageSnapshot) -> some View {
+    /// Per-source split of the selected period (pi vs OpenCode), from live data.
+    private func sourceCaption(now: Date) -> some View {
+        let pi = model.piSnapshot.map { PiHistorySummary.period(period, days: $0.byDay, now: now, calendar: .current) }
+        let oc = model.opencodeSnapshot.map { PiHistorySummary.period(period, days: $0.byDay, now: now, calendar: .current) }
+        return Group {
+            if let pi, let oc {
+                Text("pi \(PiUsageFormat.tokens(pi.totalTokens)) · opencode \(PiUsageFormat.tokens(oc.totalTokens))")
+            }
+        }
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
+    }
+
+    private func usageBlock(_ snapshot: UsageSnapshot) -> some View {
         let days = model.history.days
         let now = snapshot.collectedAt
         let usage = PiHistorySummary.period(period, days: days, now: now, calendar: .current)
@@ -115,6 +128,7 @@ struct PiDashboardSection: View {
                 .frame(width: 190)
             }
             providerFilterCaption
+            sourceCaption(now: now)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(PiUsageFormat.tokens(usage.totalTokens))
                     .font(.system(size: 30, weight: .semibold, design: .rounded))
@@ -150,7 +164,7 @@ struct PiDashboardSection: View {
 
     // MARK: - Models
 
-    private func modelsBlock(_ snapshot: PiUsageSnapshot) -> some View {
+    private func modelsBlock(_ snapshot: UsageSnapshot) -> some View {
         let total = max(snapshot.today.totalTokens, 1)
         let models = snapshot.todayByModel.sorted { $0.value.totalTokens > $1.value.totalTokens }
         return VStack(alignment: .leading, spacing: 6) {
@@ -178,7 +192,7 @@ struct PiDashboardSection: View {
 
     // MARK: - History
 
-    private func historyBlock(_ snapshot: PiUsageSnapshot) -> some View {
+    private func historyBlock(_ snapshot: UsageSnapshot) -> some View {
         let days = model.history.days
         let now = snapshot.collectedAt
         let calendar = Calendar.current
@@ -229,7 +243,7 @@ struct PiDashboardSection: View {
 
     // MARK: - Projects
 
-    private func projectsBlock(_ snapshot: PiUsageSnapshot) -> some View {
+    private func projectsBlock(_ snapshot: UsageSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Projects")
                 .font(.headline)

@@ -76,8 +76,8 @@ public struct PiProjectUsage: Sendable, Equatable, Identifiable {
     public var lastActivity: Date?
 }
 
-/// Aggregated usage snapshot across all pi sessions.
-public struct PiUsageSnapshot: Sendable, Equatable {
+/// Aggregated usage snapshot across all tracked sessions, any source.
+public struct UsageSnapshot: Sendable, Equatable {
     public var allTime: PiUsage
     public var today: PiUsage
     public var byModel: [String: PiUsage]
@@ -107,7 +107,7 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         self.collectedAt = collectedAt
     }
 
-    public static let empty = PiUsageSnapshot(
+    public static let empty = UsageSnapshot(
         allTime: .zero,
         today: .zero,
         byModel: [:],
@@ -117,6 +117,33 @@ public struct PiUsageSnapshot: Sendable, Equatable {
         sessionCount: 0,
         collectedAt: .distantPast
     )
+
+    /// Combine snapshots from different sources (pi + OpenCode) into one.
+    public static func merged(_ a: UsageSnapshot, _ b: UsageSnapshot) -> UsageSnapshot {
+        var byModel = a.byModel
+        for (model, usage) in b.byModel { byModel[model, default: .zero] += usage }
+        var todayByModel = a.todayByModel
+        for (model, usage) in b.todayByModel { todayByModel[model, default: .zero] += usage }
+        var byDay = a.byDay
+        for (day, usage) in b.byDay { byDay[day, default: .zero] += usage }
+        var projects = a.byProject
+        let paths = Set(projects.map(\.path))
+        for project in b.byProject where !paths.contains(project.path) {
+            projects.append(project)
+        }
+        return UsageSnapshot(
+            allTime: a.allTime + b.allTime,
+            today: a.today + b.today,
+            byModel: byModel,
+            todayByModel: todayByModel,
+            byDay: byDay,
+            byProject: projects.sorted {
+                ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast)
+            },
+            sessionCount: a.sessionCount + b.sessionCount,
+            collectedAt: max(a.collectedAt, b.collectedAt)
+        )
+    }
 }
 
 // MARK: - Formatting

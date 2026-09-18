@@ -31,15 +31,20 @@ On first launch, a terminal icon appears in the menu bar (top right). No setup: 
 | Variable | Default | Purpose |
 |---|---|---|
 | `PI_SESSION_DIR` | `~/.pi/agent/sessions` | Session JSONL root (tests, alternate installs) |
-| `PI_PROVIDERS` | `nodeclub` | Comma-separated provider ids whose usage is counted (see below) |
+| `OPENCODE_DATA_DIR` | `~/.local/share/opencode` | OpenCode data root (`opencode.db` inside) |
+| `PI_PROVIDERS` | `nodeclub` | Comma-separated provider ids whose usage is counted (applies to both agents) |
 | `PI_HISTORY_FILE` | `~/.nodeclub-tracker/history.json` | Daily history persistence |
 | `PI_PROJECT_DIR` | `~/.pi/agent` | Base dir used to derive per-project session folders |
 
 ## What it tracks
 
-- **Usage (inference-specific)** — from pi session files (`~/.pi/agent/sessions/<project>/*.jsonl`). Each assistant message records its `provider`, `model`, and token `usage`/`cost`; the session header carries `cwd` for per-project grouping. Only turns whose provider is in the configured set count — by default **`nodeclub`**, the provider id in pi's `~/.pi/agent/models.json` whose `baseUrl` is `https://api.nodeclub.ai/v1`. In other words: tokens served by NodeClub, not tokens from whatever backend a pi happens to use (lmstudio, openai, anthropic, …). Turn the filter with `PI_PROVIDERS` (comma-separated) if your config names the NodeClub endpoint under a different id. The popover labels the active filter under the Usage heading.
-- **Live agents** — from the *same* files, by modification time: pi appends as it works, so a file touched in the last 2 min is **working**, within 30 min is **idle**, older is not listed. This is pi liveness, not inference billing, so it is **not** provider-filtered. And it's why herdr (or any particular harness) is not required.
-- **Not tracked** — `pi --no-session` runs (nothing is persisted), and `--no-session` is the only blind spot.
+Both [pi](https://github.com/earendil-works/pi-coding-agent) and [OpenCode](https://opencode.ai) record, per assistant turn, which provider and model served it and how many tokens it used. The tracker reads both, applies the same provider filter, and merges the result — one NodeClub usage number per machine, no matter which agent the team uses.
+
+- **pi usage** — from session files (`~/.pi/agent/sessions/<project>/*.jsonl`). Each assistant message records its `provider`, `model`, and token `usage`/`cost`; the session header carries `cwd` for per-project grouping.
+- **OpenCode usage** — from its SQLite store (`~/.local/share/opencode/opencode.db`), opened **read-only** with the system SQLite library (no subprocess, WAL-safe while OpenCode writes). Each row in `message` carries JSON with `role`, `providerID`, `modelID`, `tokens`, `cost`; `session` carries the working directory. Legacy per-message JSON files are not read — the DB supersedes them.
+- **Inference-specific filter** — only turns whose provider id is in the configured set count. By default that's **`nodeclub`**: for pi it's the key in `~/.pi/agent/models.json` whose `baseUrl` is `https://api.nodeclub.ai/v1`; for OpenCode it's the `providerID` of the NodeClub endpoint. Other backends (lmstudio, openrouter, anthropic, …) are excluded. Turn the filter with `PI_PROVIDERS` (comma-separated). The popover labels the active filter under the Usage heading, with a pi/opencode split of the selected period.
+- **Live agents** — from pi session files, by modification time: pi appends as it works, so a file touched in the last 2 min is **working**, within 30 min is **idle**, older is not listed. This is agent liveness, not inference billing, so it is **not** provider-filtered. (OpenCode liveness is a planned follow-up.)
+- **Not tracked** — `pi --no-session` runs (nothing is persisted), and `--no-session` is the only pi blind spot.
 
 ## Features
 
@@ -73,11 +78,11 @@ make clean     # remove .build/ and NodeClubTracker.app
 
 ```
 Package.swift                  # swift-tools 6.2, macOS 15+, Swift 6 strict concurrency
-Sources/NodeClubTrackerCore/   # pure logic: PiUsage, PiSessionReader, PiSessionWatcher, PiHistory, PiDashboardModel, AppInfo
+Sources/NodeClubTrackerCore/   # pure logic: PiUsage, PiSessionReader, OpencodeSessionReader, PiSessionWatcher, PiHistory, PiDashboardModel, AppInfo
 Sources/NodeClubTracker/       # SwiftUI app: MenuBarExtra + popover sections
 Config/Info.plist              # LSUIElement (menu bar only), com.nodeclub.tracker
 Scripts/                       # compile_and_run.sh, package_app.sh
-Tests/NodeClubTrackerCoreTests/# XCTest: session parser, session watcher, history, usage formatting
+Tests/NodeClubTrackerCoreTests/# XCTest: pi session parser, opencode sqlite reader, session watcher, history, usage formatting
 ```
 
 Tests are XCTest (same as CodexBar's main suite). Heads-up: `swift test` is currently blocked on this machine — the active developer toolchain is CommandLineTools, which ships without the test frameworks. It runs once Xcode is active (`sudo xcodebuild -license` to accept the Xcode license, then re-select Xcode as the developer dir). The suite itself is written and ready; migrating to Swift Testing is a later option.
