@@ -31,13 +31,14 @@ On first launch, a terminal icon appears in the menu bar (top right). No setup: 
 | Variable | Default | Purpose |
 |---|---|---|
 | `PI_SESSION_DIR` | `~/.pi/agent/sessions` | Session JSONL root (tests, alternate installs) |
+| `PI_PROVIDERS` | `nodeclub` | Comma-separated provider ids whose usage is counted (see below) |
 | `PI_HISTORY_FILE` | `~/.nodeclub-tracker/history.json` | Daily history persistence |
 | `PI_PROJECT_DIR` | `~/.pi/agent` | Base dir used to derive per-project session folders |
 
 ## What it tracks
 
-- **Usage** — from pi session files (`~/.pi/agent/sessions/<project>/*.jsonl`). Each assistant message carries token `usage` + `cost`; the session header carries `cwd`, which gives per-project grouping for free.
-- **Live agents** — from the *same* files, by modification time: pi appends as it works, so a file touched in the last 2 min is **working**, within 30 min is **idle**, older is not listed. This is why herdr (or any particular harness) is not required.
+- **Usage (inference-specific)** — from pi session files (`~/.pi/agent/sessions/<project>/*.jsonl`). Each assistant message records its `provider`, `model`, and token `usage`/`cost`; the session header carries `cwd` for per-project grouping. Only turns whose provider is in the configured set count — by default **`nodeclub`**, the provider id in pi's `~/.pi/agent/models.json` whose `baseUrl` is `https://api.nodeclub.ai/v1`. In other words: tokens served by NodeClub, not tokens from whatever backend a pi happens to use (lmstudio, openai, anthropic, …). Turn the filter with `PI_PROVIDERS` (comma-separated) if your config names the NodeClub endpoint under a different id. The popover labels the active filter under the Usage heading.
+- **Live agents** — from the *same* files, by modification time: pi appends as it works, so a file touched in the last 2 min is **working**, within 30 min is **idle**, older is not listed. This is pi liveness, not inference billing, so it is **not** provider-filtered. And it's why herdr (or any particular harness) is not required.
 - **Not tracked** — `pi --no-session` runs (nothing is persisted), and `--no-session` is the only blind spot.
 
 ## Features

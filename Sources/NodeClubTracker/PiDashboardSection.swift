@@ -83,6 +83,20 @@ struct PiDashboardSection: View {
 
     // MARK: - Usage (windowed)
 
+    /// Usage is inference-specific: only turns served by the configured providers count.
+    private var providerFilterCaption: some View {
+        let providers = PiSessionReader.providers.sorted()
+        return Group {
+            if PiSessionReader.providers == PiSessionReader.defaultProviders {
+                Text("NodeClub only (api.nodeclub.ai/v1)")
+            } else {
+                Text("Providers: \(providers.joined(separator: ", "))")
+            }
+        }
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
+    }
+
     private func usageBlock(_ snapshot: PiUsageSnapshot) -> some View {
         let days = model.history.days
         let now = snapshot.collectedAt
@@ -100,6 +114,7 @@ struct PiDashboardSection: View {
                 .labelsHidden()
                 .frame(width: 190)
             }
+            providerFilterCaption
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(PiUsageFormat.tokens(usage.totalTokens))
                     .font(.system(size: 30, weight: .semibold, design: .rounded))

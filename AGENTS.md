@@ -4,6 +4,7 @@
 - `Sources/NodeClubTrackerCore`: pure Swift logic — models, stores, formatting. No UI imports; must stay testable without a running app.
 - `Sources/NodeClubTracker`: the menu bar app — SwiftUI scenes and views only. No business logic here; views call into `NodeClubTrackerCore`.
 - pi data is **read-only**: session JSONL under `~/.pi/agent/sessions` (override `PI_SESSION_DIR`). Never write to `~/.pi`.
+- Usage rollups are **inference-specific**: only assistant turns with `provider` in `PiSessionReader.providers` count (default `["nodeclub"]` = baseUrl `https://api.nodeclub.ai/v1`; override `PI_PROVIDERS`, comma-separated). Sessions with no matching turns are skipped entirely (not listed as zero-usage projects). Live-agent detection is **not** provider-filtered (it's pi liveness).
 - Live-agent detection is session-file mtime (`PiSessionWatcher`): working = touched within 2 min, idle within 30 min. Covers herdr and bare-terminal pi alike. Long single tool calls can briefly read as idle.
 - The app's own writable state lives in `~/.nodeclub-tracker/` (usage history JSON, override `PI_HISTORY_FILE`). History is a backfill: the live session scan wins for days it covers.
 - pi usage parsing lives in `NodeClubTrackerCore` as pure functions over JSONL lines; wire-format structs are private and map only the fields we need (assistant `usage` + `cwd` + entry `timestamp`).

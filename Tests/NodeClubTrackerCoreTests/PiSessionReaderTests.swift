@@ -104,6 +104,83 @@ final class PiSessionReaderTests: XCTestCase {
         XCTAssertTrue(snapshot.byProject.isEmpty)
     }
 
+    // MARK: - Provider filtering (inference-specific usage)
+
+    func test_snapshotOnlyCountsConfiguredProviders() {
+        let mixed = """
+        {"type":"session","version":3,"id":"s-mix","timestamp":"2026-09-16T10:00:00.000Z","cwd":"/tmp/projA"}
+        {"type":"message","id":"m-nc","parentId":null,"timestamp":"2026-09-16T10:00:01.000Z","message":{"role":"assistant","content":[],"provider":"nodeclub","model":"qwen3.8-27b","usage":{"input":60,"output":40,"totalTokens":100,"cost":{"total":0}},"stopReason":"stop"}}
+        {"type":"message","id":"m-ls","parentId":"m-nc","timestamp":"2026-09-16T10:00:02.000Z","message":{"role":"assistant","content":[],"provider":"lmstudio","model":"qwen-local","usage":{"input":20,"output":20,"totalTokens":40,"cost":{"total":0}},"stopReason":"stop"}}
+        """
+        let otherOnly = sessionJSON(
+            cwd: "/tmp/projB",
+            timestamp: "2026-09-16T11:00:00.000Z",
+            totalTokens: 15,
+            provider: "lmstudio"
+        )
+        let dir = makeTempSessionsDir(
+            sessions: [
+                "/tmp/projA": [mixed],
+                "/tmp/projB": [otherOnly],
+            ]
+        )
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let snapshot = PiSessionReader.snapshot(sessionsDir: dir, now: Self.now, calendar: Self.utcCalendar)
+        // The lmstudio turn is excluded, and the lmstudio-only file is skipped entirely.
+        XCTAssertEqual(snapshot.allTime.totalTokens, 100)
+        XCTAssertEqual(snapshot.sessionCount, 1)
+        XCTAssertEqual(snapshot.byProject.map(\.name), ["projA"])
+        XCTAssertEqual(snapshot.byModel.keys, Set(["qwen3.8-27b"]))
+    }
+
+    func test_snapshotExcludesTurnsWithoutProvider() {
+        let line = """
+        {"type":"message","id":"m-x","parentId":null,"timestamp":"2026-09-16T10:00:03.000Z","message":{"role":"assistant","content":[],"model":"qwen3.8-27b","usage":{"input":10,"output":10,"totalTokens":20,"cost":{"total":0}},"stopReason":"stop"}}
+        """
+        let file = Self.fixtureLines.joined(separator: "\n") + "\n" + line
+        let dir = makeTempSessionsDir(
+            sessions: ["/tmp/projA": [String(data: file.data(using: .utf8)!, as: UTF8.self)]]
+        )
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let snapshot = PiSessionReader.snapshot(sessionsDir: dir, now: Self.now, calendar: Self.utcCalendar)
+        // The provider-less turn (20 tokens) does not count.
+        XCTAssertEqual(snapshot.allTime.totalTokens, 160)
+    }
+
+    func test_providersEnvOverrideChangesFilter() throws {
+        setenv("PI_PROVIDERS", "lmstudio, nodeclub", 1)
+        defer { unsetenv("PI_PROVIDERS") }
+        XCTAssertEqual(PiSessionReader.providers, Set(["lmstudio", "nodeclub"]))
+
+        let mixed = """
+        {"type":"session","version":3,"id":"s-mix","timestamp":"2026-09-16T10:00:00.000Z","cwd":"/tmp/projA"}
+        {"type":"message","id":"m-nc","parentId":null,"timestamp":"2026-09-16T10:00:01.000Z","message":{"role":"assistant","content":[],"provider":"nodeclub","model":"qwen3.8-27b","usage":{"input":60,"output":40,"totalTokens":100,"cost":{"total":0}},"stopReason":"stop"}}
+        {"type":"message","id":"m-ls","parentId":"m-nc","timestamp":"2026-09-16T10:00:02.000Z","message":{"role":"assistant","content":[],"provider":"lmstudio","model":"qwen-local","usage":{"input":20,"output":20,"totalTokens":40,"cost":{"total":0}},"stopReason":"stop"}}
+        """
+        let dir = makeTempSessionsDir(sessions: ["/tmp/projA": [mixed]])
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Explicit parameter beats the env var.
+        let nodeclubOnly = PiSessionReader.snapshot(
+            sessionsDir: dir,
+            providers: ["nodeclub"],
+            now: Self.now,
+            calendar: Self.utcCalendar
+        )
+        XCTAssertEqual(nodeclubOnly.allTime.totalTokens, 100)
+        // Default (env-driven) now includes both providers.
+        let both = PiSessionReader.snapshot(sessionsDir: dir, now: Self.now, calendar: Self.utcCalendar)
+        XCTAssertEqual(both.allTime.totalTokens, 140)
+    }
+
+    func test_providersEnvBlankFallsBackToDefault() throws {
+        setenv("PI_PROVIDERS", "   ", 1)
+        defer { unsetenv("PI_PROVIDERS") }
+        XCTAssertEqual(PiSessionReader.providers, PiSessionReader.defaultProviders)
+    }
+
     // MARK: - Helpers
 
     /// Session dir layout: <dir>/<encoded-cwd>/<n>.jsonl
@@ -123,10 +200,10 @@ final class PiSessionReaderTests: XCTestCase {
         return dir
     }
 
-    private func sessionJSON(cwd: String, timestamp: String, totalTokens: Int) -> String {
+    private func sessionJSON(cwd: String, timestamp: String, totalTokens: Int, provider: String = "nodeclub") -> String {
         """
         {"type":"session","version":3,"id":"s-\(totalTokens)","timestamp":"\(timestamp)","cwd":"\(cwd)"}
-        {"type":"message","id":"m-\(totalTokens)","parentId":null,"timestamp":"\(timestamp)","message":{"role":"assistant","content":[],"provider":"nodeclub","model":"qwen3.8-27b","usage":{"input":\(totalTokens / 2),"output":\(totalTokens - totalTokens / 2),"totalTokens":\(totalTokens),"cost":{"total":0}},"stopReason":"stop"}}
+        {"type":"message","id":"m-\(totalTokens)","parentId":null,"timestamp":"\(timestamp)","message":{"role":"assistant","content":[],"provider":"\(provider)","model":"qwen3.8-27b","usage":{"input":\(totalTokens / 2),"output":\(totalTokens - totalTokens / 2),"totalTokens":\(totalTokens),"cost":{"total":0}},"stopReason":"stop"}}
         """
     }
 }

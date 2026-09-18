@@ -13,6 +13,25 @@ public enum PiSessionReader {
         return URL(fileURLWithPath: NSHomeDirectory() + "/.pi/agent/sessions", isDirectory: true)
     }
 
+    /// Usage rollups are inference-specific: only assistant turns attributed to these
+    /// providers are counted. `nodeclub` is the provider id in `~/.pi/agent/models.json`
+    /// whose `baseUrl` is `https://api.nodeclub.ai/v1`, so filtering on it means
+    /// "tokens served by NodeClub" — not tokens from any backend pi happens to use
+    /// (lmstudio, openai, anthropic, …).
+    public static let defaultProviders: Set<String> = ["nodeclub"]
+
+    /// Active provider filter; `PI_PROVIDERS` (comma-separated ids) overrides the default.
+    public static var providers: Set<String> {
+        if let override = ProcessInfo.processInfo.environment["PI_PROVIDERS"] {
+            let ids = Set(
+                override.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+            )
+            if !ids.isEmpty { return ids }
+        }
+        return defaultProviders
+    }
+
     // MARK: - Pure parsing
 
     /// Parse one session file's JSONL into its header cwd + assistant turns.
@@ -62,13 +81,17 @@ public enum PiSessionReader {
     // MARK: - Aggregation
 
     /// Scan a sessions directory and roll up all-time / today / per-project usage.
-    /// `now` and `calendar` are injected so "today" is deterministic in tests.
+    /// Only turns whose provider is in `providers` (default: `Self.providers`) count;
+    /// sessions with no matching turns are excluded entirely. `now` and `calendar`
+    /// are injected so "today" is deterministic in tests.
     public static func snapshot(
         sessionsDir: URL,
+        providers: Set<String>? = nil,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> PiUsageSnapshot {
         let fileManager = FileManager.default
+        let providerFilter = providers ?? Self.providers
         let dayStart = calendar.startOfDay(for: now)
         var allTime = PiUsage.zero
         var today = PiUsage.zero
@@ -90,6 +113,12 @@ public enum PiSessionReader {
             guard let data = try? Data(contentsOf: url) else { continue }
             let session = parseSession(data: data)
             guard let cwd = session.cwd else { continue }
+            // Inference-specific filter: keep only turns from the configured providers.
+            let turns = session.turns.filter { turn in
+                guard let provider = turn.provider else { return false }
+                return providerFilter.contains(provider)
+            }
+            guard !turns.isEmpty else { continue }
             sessionCount += 1
             let projectName = (cwd as NSString).lastPathComponent
             projects[cwd, default: PiProjectUsage(
@@ -100,7 +129,7 @@ public enum PiSessionReader {
                 lastActivity: nil
             )].sessionCount += 1
 
-            for turn in session.turns {
+            for turn in turns {
                 allTime += turn.usage
                 byDay[PiDayKey.string(for: turn.timestamp, calendar: calendar), default: .zero] += turn.usage
                 if turn.timestamp >= dayStart && turn.timestamp <= now {
