@@ -19,6 +19,15 @@ final class OpencodeSessionReaderTests: XCTestCase {
 
     // MARK: - Fixtures
 
+    private func openDatabase(_ dbURL: URL) -> OpaquePointer {
+        var db: OpaquePointer?
+        precondition(
+            sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK && db != nil,
+            "cannot open fixture db"
+        )
+        return db!
+    }
+
     private func makeDatabase() -> URL {
         let fileManager = FileManager.default
         let dir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
@@ -26,10 +35,7 @@ final class OpencodeSessionReaderTests: XCTestCase {
         try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
         let dbURL = dir.appendingPathComponent("opencode.db")
 
-        var db: OpaquePointer?
-        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK else {
-            fatalError("cannot open fixture db")
-        }
+        let db = openDatabase(dbURL)
         defer { sqlite3_close(db) }
         exec(db, """
         CREATE TABLE session (
@@ -85,8 +91,10 @@ final class OpencodeSessionReaderTests: XCTestCase {
     }
 
     private func exec(_ db: OpaquePointer, _ sql: String) {
-        var error: UnsafeMutablePointer<CChar>?
-        precondition(sqlite3_exec(db, sql, nil, nil, &error) == SQLITE_OK, "fixture exec failed: \(String(cString: error ?? nil))")
+        var stmt: OpaquePointer?
+        precondition(sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK)
+        defer { sqlite3_finalize(stmt) }
+        precondition(sqlite3_step(stmt) == SQLITE_DONE)
     }
 
     private func insertSession(_ db: OpaquePointer, id: String, directory: String) {
@@ -145,7 +153,7 @@ final class OpencodeSessionReaderTests: XCTestCase {
         XCTAssertEqual(snapshot.allTime.cost, 0, accuracy: 0.0001)
         XCTAssertEqual(snapshot.today.totalTokens, 100)
         XCTAssertEqual(snapshot.sessionCount, 2)
-        XCTAssertEqual(snapshot.byModel.keys, Set(["qwen3.8-27b"]))
+        XCTAssertEqual(Set(snapshot.byModel.keys), Set(["qwen3.8-27b"]))
         XCTAssertEqual(snapshot.byModel["qwen3.8-27b"]?.totalTokens, 110)
         XCTAssertEqual(snapshot.todayByModel["qwen3.8-27b"]?.totalTokens, 100)
         XCTAssertEqual(snapshot.byDay["2026-09-16"]?.totalTokens, 100)

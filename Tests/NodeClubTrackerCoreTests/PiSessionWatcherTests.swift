@@ -22,9 +22,11 @@ final class PiSessionWatcherTests: XCTestCase {
         let projectDir = dir.appendingPathComponent("--Users-me-\(project)--")
         try fileManager.createDirectory(at: projectDir, withIntermediateDirectories: true)
         let header = #"{"type":"session","version":3,"id":"x","timestamp":"2026-09-16T10:00:00.000Z","cwd":"/Users/me/\#(project)"}"#
-        let fileURL = projectDir.appendingPathComponent(file)
+        var fileURL = projectDir.appendingPathComponent(file)
         try (content ?? header).write(to: fileURL, atomically: true, encoding: .utf8)
-        try fileURL.setResourceValues([.contentModificationDate: mtime])
+        var values = URLResourceValues()
+        values.contentModificationDate = mtime
+        try fileURL.setResourceValues(values)
     }
 
     func test_workingIdleAndStaleClassification() throws {

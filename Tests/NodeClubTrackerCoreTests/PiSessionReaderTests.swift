@@ -46,7 +46,7 @@ final class PiSessionReaderTests: XCTestCase {
     func test_snapshotAggregatesTodayAndAllTime() {
         let dir = makeTempSessionsDir(
             sessions: [
-                "/tmp/projA": [String(data: Self.fixtureLines.joined(separator: "\n").data(using: .utf8)!, as: UTF8.self)],
+                "/tmp/projA": [String(decoding: Self.fixtureLines.joined(separator: "\n").data(using: .utf8)!, as: UTF8.self)],
             ]
         )
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -131,7 +131,7 @@ final class PiSessionReaderTests: XCTestCase {
         XCTAssertEqual(snapshot.allTime.totalTokens, 100)
         XCTAssertEqual(snapshot.sessionCount, 1)
         XCTAssertEqual(snapshot.byProject.map(\.name), ["projA"])
-        XCTAssertEqual(snapshot.byModel.keys, Set(["qwen3.8-27b"]))
+        XCTAssertEqual(Set(snapshot.byModel.keys), Set(["qwen3.8-27b"]))
     }
 
     func test_snapshotExcludesTurnsWithoutProvider() {
@@ -140,7 +140,7 @@ final class PiSessionReaderTests: XCTestCase {
         """
         let file = Self.fixtureLines.joined(separator: "\n") + "\n" + line
         let dir = makeTempSessionsDir(
-            sessions: ["/tmp/projA": [String(data: file.data(using: .utf8)!, as: UTF8.self)]]
+            sessions: ["/tmp/projA": [String(decoding: file.data(using: .utf8)!, as: UTF8.self)]]
         )
         defer { try? FileManager.default.removeItem(at: dir) }
 
