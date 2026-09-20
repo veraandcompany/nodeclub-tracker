@@ -68,12 +68,21 @@ public struct PiTurn: Sendable, Equatable {
 
 /// A project (working directory) rollup across its session files.
 public struct PiProjectUsage: Sendable, Equatable, Identifiable {
-    public var id: String { path }
     public var name: String
     public var path: String
     public var usage: PiUsage
     public var sessionCount: Int
     public var lastActivity: Date?
+
+    public var id: String { path }
+
+    public init(name: String, path: String, usage: PiUsage, sessionCount: Int, lastActivity: Date?) {
+        self.name = name
+        self.path = path
+        self.usage = usage
+        self.sessionCount = sessionCount
+        self.lastActivity = lastActivity
+    }
 }
 
 /// Aggregated usage snapshot across all tracked sessions, any source.
@@ -119,7 +128,20 @@ public struct UsageSnapshot: Sendable, Equatable {
     )
 
     /// Combine snapshots from different sources (pi + OpenCode) into one.
+    /// Combine snapshots from any number of sources (pi, OpenCode, Hermes, …).
+    /// Projects sharing a path merge (usage and session counts summed, freshest
+    /// activity kept), so the same working directory reports once across sources.
+    public static func merged(_ snapshots: [UsageSnapshot]) -> UsageSnapshot {
+        guard var result = snapshots.first else { return .empty }
+        for snapshot in snapshots.dropFirst() { result = mergePair(result, snapshot) }
+        return result
+    }
+
     public static func merged(_ a: UsageSnapshot, _ b: UsageSnapshot) -> UsageSnapshot {
+        mergePair(a, b)
+    }
+
+    private static func mergePair(_ a: UsageSnapshot, _ b: UsageSnapshot) -> UsageSnapshot {
         var byModel = a.byModel
         for (model, usage) in b.byModel { byModel[model, default: .zero] += usage }
         var todayByModel = a.todayByModel
@@ -127,9 +149,16 @@ public struct UsageSnapshot: Sendable, Equatable {
         var byDay = a.byDay
         for (day, usage) in b.byDay { byDay[day, default: .zero] += usage }
         var projects = a.byProject
-        let paths = Set(projects.map(\.path))
-        for project in b.byProject where !paths.contains(project.path) {
-            projects.append(project)
+        for project in b.byProject {
+            if let index = projects.firstIndex(where: { $0.path == project.path }) {
+                projects[index].usage += project.usage
+                projects[index].sessionCount += project.sessionCount
+                if let last = project.lastActivity {
+                    projects[index].lastActivity = max(projects[index].lastActivity ?? last, last)
+                }
+            } else {
+                projects.append(project)
+            }
         }
         return UsageSnapshot(
             allTime: a.allTime + b.allTime,

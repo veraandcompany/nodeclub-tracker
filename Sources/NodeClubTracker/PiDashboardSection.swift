@@ -34,7 +34,7 @@ struct PiDashboardSection: View {
     private var agentsBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Label("Pi agents", systemImage: "terminal")
+                Label("Agents", systemImage: "terminal")
                     .font(.headline)
                 Spacer()
                 if model.workingCount > 0 {
@@ -97,13 +97,17 @@ struct PiDashboardSection: View {
         .foregroundStyle(.tertiary)
     }
 
-    /// Per-source split of the selected period (pi vs OpenCode), from live data.
+    /// Per-source split of the selected period (pi / OpenCode / Hermes), from live data.
     private func sourceCaption(now: Date) -> some View {
         let pi = model.piSnapshot.map { PiHistorySummary.period(period, days: $0.byDay, now: now, calendar: .current) }
         let oc = model.opencodeSnapshot.map { PiHistorySummary.period(period, days: $0.byDay, now: now, calendar: .current) }
+        let hermes = model.hermesSnapshot.map { PiHistorySummary.period(period, days: $0.byDay, now: now, calendar: .current) }
         return Group {
-            if let pi, let oc {
-                Text("pi \(PiUsageFormat.tokens(pi.totalTokens)) · opencode \(PiUsageFormat.tokens(oc.totalTokens))")
+            if let pi, let oc, let hermes {
+                Text(
+                    "pi \(PiUsageFormat.tokens(pi.totalTokens)) · opencode \(PiUsageFormat.tokens(oc.totalTokens))"
+                        + " · hermes \(PiUsageFormat.tokens(hermes.totalTokens))"
+                )
             }
         }
         .font(.caption2)

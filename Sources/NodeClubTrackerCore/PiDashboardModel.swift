@@ -1,25 +1,30 @@
 import Foundation
 import Observation
 
-/// Observable dashboard state: live agents + usage stats (pi + OpenCode).
+/// Observable dashboard state: live agents + usage stats (pi + OpenCode + Hermes).
 ///
 /// `refresh()` does all file/DB I/O off the main actor, then publishes the
-/// results here. Each source is best-effort: if one fails, the other still
-/// updates.
+/// results here. Each source is best-effort: if one fails, the others still
+/// update.
 @MainActor
 @Observable
 public final class PiDashboardModel {
     public private(set) var agents: [PiAgent] = []
     public private(set) var piSnapshot: UsageSnapshot?
     public private(set) var opencodeSnapshot: UsageSnapshot?
+    public private(set) var hermesSnapshot: UsageSnapshot?
     public private(set) var history: PiUsageHistory
     public private(set) var lastRefresh: Date?
     private var autoRefreshTask: Task<Void, Never>?
 
-    /// Combined view of pi + OpenCode usage (nil before the first refresh).
+    /// Combined view of pi + OpenCode + Hermes usage (nil before the first refresh).
     public var snapshot: UsageSnapshot? {
-        guard let pi = piSnapshot, let oc = opencodeSnapshot else { return nil }
-        return .merged(pi, oc)
+        guard
+            let pi = piSnapshot,
+            let oc = opencodeSnapshot,
+            let hermes = hermesSnapshot
+        else { return nil }
+        return .merged([pi, oc, hermes])
     }
 
     public init() {
@@ -37,7 +42,8 @@ public final class PiDashboardModel {
         let result = await Task.detached(priority: .utility) {
             let pi = PiSessionReader.snapshot(sessionsDir: sessionsDir, now: now)
             let opencode = OpencodeSessionReader.snapshot(now: now)
-            let combined = UsageSnapshot.merged(pi, opencode)
+            let hermes = HermesSessionReader.snapshot(now: now)
+            let combined = UsageSnapshot.merged([pi, opencode, hermes])
             let persisted = PiHistoryStore.load(url: historyFile)
             let merged = PiHistorySummary.merged(
                 live: combined.byDay,
@@ -47,12 +53,16 @@ public final class PiDashboardModel {
                 calendar: calendar
             )
             PiHistoryStore.save(merged, to: historyFile)
-            return (pi, opencode, merged, PiSessionWatcher.findAgents(sessionsDir: sessionsDir, now: now))
+            let agents = (PiSessionWatcher.findAgents(sessionsDir: sessionsDir, now: now)
+                + HermesSessionWatcher.findAgents(now: now))
+                .sorted { $0.lastActivity > $1.lastActivity }
+            return (pi, opencode, hermes, merged, agents)
         }.value
         self.piSnapshot = result.0
         self.opencodeSnapshot = result.1
-        self.history = result.2
-        self.agents = result.3
+        self.hermesSnapshot = result.2
+        self.history = result.3
+        self.agents = result.4
         self.lastRefresh = now
     }
 
