@@ -1,6 +1,6 @@
 # NodeClub Tracker — agent usage, at a glance.
 
-> A tiny macOS menu bar app that keeps your agent usage on NodeClub visible: who's working, what it cost, and how the trend is going.
+> A tiny macOS menu bar app that keeps your agent usage on NodeClub visible: who's working, how much you've used, and how the trend is going.
 
 [![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue?style=flat-square)](https://www.apple.com/macos/)
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange?style=flat-square)](https://www.swift.org/)
@@ -11,7 +11,7 @@ Structured after [CodexBar](https://github.com/steipete/codexbar): SwiftPM packa
 ## Why
 
 - **Team visibility without ceremony.** Every pi, OpenCode, or Hermes that persists a session is tracked — pi inside herdr, in a bare terminal, `pi --print` — with zero configuration on each machine.
-- **Plan around your day.** Today / Month / Year tokens and cost, per model, per project, with a 14-day history chart. Stop guessing what a day of coding costs.
+- **Plan around your day.** Today / Month / Year tokens, per model, per project, with a 14-day history chart. NodeClub is a flat-rate plan, so the app tracks token volume, not spend.
 - **Live agents, no daemon.** A green dot in the menu bar while any agent is working, plus a list of agents with project and staleness. No agent to install, no service to run.
 - **Privacy-first.** On-device parsing of your own session files. Nothing leaves the machine, and pi's data is read-only.
 
@@ -39,7 +39,7 @@ On first launch, a terminal icon appears in the menu bar (top right). No setup: 
 
 ## What it tracks
 
-[pi](https://github.com/earendil-works/pi-coding-agent), [OpenCode](https://opencode.ai), and Hermes each record, per assistant turn or per route, which provider or endpoint served it and how many tokens it used. The tracker reads all three, applies the same NodeClub-only discipline, and merges the result — one NodeClub usage number per machine, no matter which agent the team uses.
+[pi](https://github.com/earendil-works/pi-coding-agent), [OpenCode](https://opencode.ai), and Hermes each record, per assistant turn or per route, which provider or endpoint served it and how many tokens it used. The tracker reads all three, applies the same NodeClub-only discipline, and merges the result — one NodeClub usage number per machine, no matter which agent the team uses. NodeClub is a flat-rate plan, so there is no per-token cost to report and the app tracks volume; cost only appears if you point `PI_PROVIDERS` at a per-token backend that records it.
 
 - **pi usage** — from session files (`~/.pi/agent/sessions/<project>/*.jsonl`). Each assistant message records its `provider`, `model`, and token `usage`/`cost`; the session header carries `cwd` for per-project grouping.
 - **OpenCode usage** — from its SQLite store (`~/.local/share/opencode/opencode.db`), opened **read-only** with the system SQLite library (no subprocess, WAL-safe while OpenCode writes). Each row in `message` carries JSON with `role`, `providerID`, `modelID`, `tokens`, `cost`; `session` carries the working directory. Legacy per-message JSON files are not read — the DB supersedes them.

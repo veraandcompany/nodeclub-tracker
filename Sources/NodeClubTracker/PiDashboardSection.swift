@@ -88,7 +88,7 @@ struct PiDashboardSection: View {
         let providers = PiSessionReader.providers.sorted()
         return Group {
             if PiSessionReader.providers == PiSessionReader.defaultProviders {
-                Text("NodeClub only (api.nodeclub.ai/v1)")
+                Text("NodeClub only (api.nodeclub.ai/v1 · flat rate)")
             } else {
                 Text("Providers: \(providers.joined(separator: ", "))")
             }
