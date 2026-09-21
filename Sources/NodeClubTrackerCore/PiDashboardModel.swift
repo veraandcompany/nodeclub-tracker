@@ -16,6 +16,10 @@ public final class PiDashboardModel {
     public private(set) var history: PiUsageHistory
     public private(set) var lastRefresh: Date?
     private var autoRefreshTask: Task<Void, Never>?
+    /// Re-entrancy guard: set for the duration of one scan so a concurrent
+    /// `refresh()` (popover opening while auto-refresh runs) skips instead
+    /// of doubling the I/O.
+    private var isRefreshing = false
     /// Optional chatty log sink (e.g. `VerboseLogger.log`); called from the
     /// detached refresh task with per-source detail lines. nil = silent.
     private let log: (@Sendable (String) -> Void)?
@@ -39,6 +43,12 @@ public final class PiDashboardModel {
     public var idleCount: Int { agents.count { $0.status == .idle } }
 
     public func refresh() async {
+        guard !isRefreshing else {
+            log?("refresh: skipped, one already in flight")
+            return
+        }
+        isRefreshing = true
+        defer { isRefreshing = false }
         let sessionsDir = PiSessionReader.defaultSessionsDir
         let historyFile = PiHistoryStore.defaultFileURL
         let now = Date()
@@ -54,14 +64,19 @@ public final class PiDashboardModel {
             log?("refresh: hermes \(hermes.sessionCount) sessions, \(hermes.byProject.count) projects, today \(PiUsageFormat.tokens(hermes.today.totalTokens)) tokens")
             let combined = UsageSnapshot.merged([pi, opencode, hermes])
             let persisted = PiHistoryStore.load(url: historyFile)
+            // 366 days so the "Year" window stays complete; the JSON stays ~40 KB.
             let merged = PiHistorySummary.merged(
                 live: combined.byDay,
                 with: persisted,
-                retainedDays: 90,
+                retainedDays: 366,
                 now: now,
                 calendar: calendar
             )
-            PiHistoryStore.save(merged, to: historyFile)
+            // The merge is idempotent, so rewriting the same bytes every
+            // cycle is pure disk wear: save only when something changed.
+            if merged != persisted {
+                PiHistoryStore.save(merged, to: historyFile)
+            }
             let agents = (PiSessionWatcher.findAgents(sessionsDir: sessionsDir, now: now)
                 + HermesSessionWatcher.findAgents(now: now))
                 .sorted { $0.lastActivity > $1.lastActivity }
