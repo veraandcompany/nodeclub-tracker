@@ -35,6 +35,13 @@ struct MenuContentView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             Spacer()
+            Button("Quit") {
+                NSApplication.shared.terminate(nil)
+            }
+            .buttonStyle(.plain)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .help("Quit NodeClub Tracker")
             Button {
                 SettingsWindowController.show(model: pi)
             } label: {
