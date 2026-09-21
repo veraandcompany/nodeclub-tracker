@@ -4,17 +4,12 @@ import NodeClubTrackerCore
 @main
 struct NodeClubTrackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var pi = PiDashboardModel()
-
-    init() {
-        pi.startAutoRefresh()
-    }
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContentView(pi: pi)
+            MenuContentView(pi: appDelegate.dashboard)
         } label: {
-            StatusItemLabel(pi: pi)
+            StatusItemLabel(pi: appDelegate.dashboard)
         }
         .menuBarExtraStyle(.window)
     }

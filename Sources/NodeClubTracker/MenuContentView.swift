@@ -30,11 +30,23 @@ struct MenuContentView: View {
     }
 
     private var footer: some View {
-        Text("\(AppInfo.name) \(AppInfo.shortVersion) (\(AppInfo.build))")
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding([.horizontal, .bottom], 12)
-            .padding(.top, 4)
+        HStack(spacing: 4) {
+            Text("\(AppInfo.name) \(AppInfo.shortVersion) (\(AppInfo.build))")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            Spacer()
+            Button {
+                SettingsWindowController.show(model: pi)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Settings…")
+            .accessibilityLabel("Settings")
+        }
+        .padding([.horizontal, .bottom], 12)
+        .padding(.top, 4)
     }
 }
