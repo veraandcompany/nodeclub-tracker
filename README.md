@@ -17,14 +17,50 @@ Structured after [CodexBar](https://github.com/steipete/codexbar): SwiftPM packa
 
 ## Install
 
-Built from source today (no signed distribution yet):
+### Download
+
+1. Grab the latest `NodeClubTracker-<version>.dmg` from the [releases](https://github.com/veraandcompany/nodeclub-tracker/releases/latest) page.
+2. Open the DMG and drag **NodeClubTracker** into **Applications** (the DMG already contains an Applications shortcut for exactly this).
+3. The first launch attempt will be blocked:
+
+   > “NodeClubTracker” can’t be opened because the developer cannot be verified.
+
+   **This is expected** — the app is not signed with an Apple Developer ID. What is happening and why it is safe: [Why does Gatekeeper block it?](#why-does-gatekeeper-block-it-and-why-is-it-safe). To unblock it once, run this in Terminal:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/NodeClubTracker.app
+   ```
+
+4. Launch NodeClubTracker. A terminal icon appears in the menu bar (top right). No setup: it finds pi's sessions at `~/.pi/agent/sessions/` automatically.
+
+### Why does Gatekeeper block it? (and why it's safe)
+
+macOS stamps every file downloaded from the internet with a *quarantine* flag (`com.apple.quarantine`). Gatekeeper then refuses to run quarantined apps unless they carry a trusted signature: a Developer ID from an Apple-verified account, plus notarization.
+
+NodeClubTracker deliberately skips that step **for now**: there is no Apple Developer account, no signing identity, and no notarization in the pipeline. Releases are built by hand on a single Mac — see [Releases](#releases) — so every DMG you download carries only the automatic *ad-hoc* signature that SwiftPM produces. Ad-hoc is enough to run on the machine that built it, and not enough to satisfy Gatekeeper anywhere else. The `xattr` command above simply removes the quarantine stamp; afterwards macOS runs the app like any other. Nothing else is patched, re-signed, or modified.
+
+What you are trusting is small, local, and inspectable:
+
+- **One Swift binary from this repo.** The entire app is the source in this repository — read it, or build it yourself with `make start`. The release DMG is produced from exactly this code by `make dist` on the maintainer's Mac; no CI and no other machines are in between.
+- **No network code.** It never makes a network request. It reads local agent state (pi session files, OpenCode's DB, Hermes' state) and writes only its own history and log under `~/.nodeclub-tracker/`.
+- **No elevated access.** No TCC permissions, no helper tools, no launch agents, no background daemons.
+- **The download is verifiable.** Every release publishes a `.sha256` sidecar next to the DMG. If you want proof the download is bit-identical to the built artifact:
+
+  ```bash
+  cd ~/Downloads
+  shasum -a 256 -c NodeClubTracker-<version>.dmg.sha256
+  ```
+
+If the app is ever Developer ID-signed and notarized, the `xattr` step disappears and this section is replaced by “just open it”.
+
+### From source
 
 ```bash
 make start   # build, package NodeClubTracker.app, launch
 make stop    # quit
 ```
 
-On first launch, a terminal icon appears in the menu bar (top right). No setup: it finds pi's sessions at `~/.pi/agent/sessions/` automatically.
+(Requires the Xcode toolchain — see [Dev loop](#dev-loop).)
 
 ### Overrides
 
@@ -71,6 +107,7 @@ make start     # kill, build (debug), package NodeClubTracker.app, relaunch, ver
 make stop      # quit the app
 make test      # run the core test suite (needs the Xcode toolchain — see note below)
 make build     # swift build only
+make dist      # release build + dist/NodeClubTracker-<version>.dmg (+ .sha256 sidecar)
 make clean     # remove .build/ and NodeClubTracker.app
 ```
 
@@ -83,11 +120,29 @@ Package.swift                  # swift-tools 6.2, macOS 15+, Swift 6 strict conc
 Sources/NodeClubTrackerCore/   # pure logic: PiUsage, PiSessionReader/Watcher, OpencodeSessionReader, HermesSessionReader/Watcher, PiHistory, PiDashboardModel, NodeClubEndpoint, VerboseLogger, AppInfo
 Sources/NodeClubTracker/       # SwiftUI app: MenuBarExtra + popover sections
 Config/Info.plist              # LSUIElement (menu bar only), com.nodeclub.tracker
-Scripts/                       # compile_and_run.sh, package_app.sh
+Scripts/                       # compile_and_run.sh, package_app.sh, make_dmg.sh
 Tests/NodeClubTrackerCoreTests/# XCTest: pi session parser, opencode sqlite reader, hermes reader, session watchers, dashboard model, history, usage formatting
 ```
 
 Tests are XCTest (same as CodexBar's main suite). Builds and tests require the Xcode toolchain (`xcode-select -p` → `/Applications/Xcode.app`): CommandLineTools cannot build this package, since the SwiftUI `@State` macro plugin only ships with Xcode and CLT no longer bundles XCTest. Migrating to Swift Testing is a later option.
+
+## Releases
+
+No CI, no signing identity: every release is built by hand on the maintainer's Mac — the only machine with the Xcode toolchain this project uses. The flow is three steps:
+
+```bash
+# 1. Bump the version in Config/Info.plist (CFBundleShortVersionString + CFBundleVersion) and commit — big changes bump minor, everything else patch
+# 2. Build the DMG + SHA-256 sidecar
+make dist    # -> dist/NodeClubTracker-<version>.dmg and dist/NodeClubTracker-<version>.dmg.sha256
+# 3. Tag and publish both artifacts as a GitHub release
+git tag v0.5.0 && git push origin v0.5.0
+gh release create v0.5.0 \
+    dist/NodeClubTracker-0.5.0.dmg \
+    dist/NodeClubTracker-0.5.0.dmg.sha256 \
+    --title "v0.5.0" --notes "..."
+```
+
+`make dist` = `./Scripts/make_dmg.sh`: release `swift build` → `package_app.sh` app bundle → staging folder with the app plus an `Applications` symlink → `diskutil image` (UDZO). The artifact is ad-hoc signed only; the resulting Gatekeeper friction for users is documented in [Install](#install).
 
 ## Credits
 

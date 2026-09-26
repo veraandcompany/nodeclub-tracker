@@ -11,7 +11,7 @@
 - The app's own writable state lives in `~/.nodeclub-tracker/` (usage history JSON, override `PI_HISTORY_FILE`). History is a backfill: the live session scan wins for days it covers.
 - pi usage parsing lives in `NodeClubTrackerCore` as pure functions over JSONL lines; wire-format structs are private and map only the fields we need (assistant `usage` + `cwd` + entry `timestamp`).
 - `Tests/NodeClubTrackerCoreTests`: XCTest coverage for core behavior; mirror new core logic with focused tests. (XCTest stays for now; Swift Testing is unblocked to revisit since the active developer dir is Xcode — CLT 27 can't build this package at all: no XCTest and no SwiftUI macro plugin.)
-- `Scripts`: build/package helpers. `compile_and_run.sh` is the dev loop (kill, build, package, relaunch, verify). `package_app.sh` assembles `NodeClubTracker.app` from the SwiftPM product.
+- `Scripts`: build/package helpers. `compile_and_run.sh` is the dev loop (kill, build, package, relaunch, verify). `package_app.sh` assembles `NodeClubTracker.app` from the SwiftPM product. `make_dmg.sh` builds the release DMG + SHA-256 sidecar (`make dist`); releases are ad-hoc signed only — no CI, no signing identity, built by hand on this Mac; users remove the download quarantine with `xattr` (documented in README Install/Releases).
 - `Config/Info.plist`: app bundle metadata (copied into the bundle by `package_app.sh`). `LSUIElement` must stay `true` (menu-bar-only, no Dock icon).
 
 ## Build, Test, Run
@@ -39,6 +39,7 @@
 - **Big changes** (new features, new UI surfaces like a settings window) bump the **minor** version: `0.1.0` → `0.2.0`.
 - **All other changes** (fixes, tweaks, copy edits) bump the **patch** version: `0.1.0` → `0.1.1`.
 - Also increment `CFBundleVersion` (the build number) on every release so each release has a unique build.
+- A release = `make dist` + `git tag v<version>` + GitHub release with the DMG and `.sha256` (see README Releases).
 
 ## Conventions
 - Keep the project dependency-free unless there is a strong reason; add packages with confirmation.

@@ -1,12 +1,15 @@
 SHELL := /bin/bash
 
-.PHONY: build test start start-release stop restart clean
+.PHONY: build test dist start start-release stop restart clean
 
 build:
 	swift build
 
 test:
 	swift test
+
+dist:
+	./Scripts/make_dmg.sh release
 
 start:
 	./Scripts/compile_and_run.sh
