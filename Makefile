@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: build test dist start start-release stop restart clean
+.PHONY: build test dist release-gh start start-release stop restart clean
 
 build:
 	swift build
@@ -10,6 +10,9 @@ test:
 
 dist:
 	./Scripts/make_dmg.sh release
+
+release-gh:
+	./Scripts/make_gh_release.sh "$(NOTES)" $(FLAGS)
 
 start:
 	./Scripts/compile_and_run.sh

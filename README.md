@@ -108,6 +108,7 @@ make stop      # quit the app
 make test      # run the core test suite (needs the Xcode toolchain — see note below)
 make build     # swift build only
 make dist      # release build + dist/NodeClubTracker-<version>.dmg (+ .sha256 sidecar)
+make release-gh # one-shot: build, tag v<version>, push, gh release create (see Releases)
 make clean     # remove .build/ and NodeClubTracker.app
 ```
 
@@ -120,7 +121,7 @@ Package.swift                  # swift-tools 6.2, macOS 15+, Swift 6 strict conc
 Sources/NodeClubTrackerCore/   # pure logic: PiUsage, PiSessionReader/Watcher, OpencodeSessionReader, HermesSessionReader/Watcher, PiHistory, PiDashboardModel, NodeClubEndpoint, VerboseLogger, AppInfo
 Sources/NodeClubTracker/       # SwiftUI app: MenuBarExtra + popover sections
 Config/Info.plist              # LSUIElement (menu bar only), com.nodeclub.tracker
-Scripts/                       # compile_and_run.sh, package_app.sh, make_dmg.sh
+Scripts/                       # compile_and_run.sh, package_app.sh, make_dmg.sh, make_gh_release.sh
 Tests/NodeClubTrackerCoreTests/# XCTest: pi session parser, opencode sqlite reader, hermes reader, session watchers, dashboard model, history, usage formatting
 ```
 
@@ -128,21 +129,24 @@ Tests are XCTest (same as CodexBar's main suite). Builds and tests require the X
 
 ## Releases
 
-No CI, no signing identity: every release is built by hand on the maintainer's Mac — the only machine with the Xcode toolchain this project uses. The flow is three steps:
+No CI, no signing identity: every release is built and published from the maintainer's Mac — the only machine with the Xcode toolchain this project uses. The release itself is one command:
 
 ```bash
-# 1. Bump the version in Config/Info.plist (CFBundleShortVersionString + CFBundleVersion) and commit — big changes bump minor, everything else patch
-# 2. Build the DMG + SHA-256 sidecar
-make dist    # -> dist/NodeClubTracker-<version>.dmg and dist/NodeClubTracker-<version>.dmg.sha256
-# 3. Tag and publish both artifacts as a GitHub release
-git tag v0.5.0 && git push origin v0.5.0
-gh release create v0.5.0 \
-    dist/NodeClubTracker-0.5.0.dmg \
-    dist/NodeClubTracker-0.5.0.dmg.sha256 \
-    --title "v0.5.0" --notes "..."
+make release-gh                     # build, tag, push, publish — notes auto-generated from commits
+make release-gh NOTES="notes here"  # ...with custom release notes
+make release-gh FLAGS="--draft"     # ...publish as a draft (or --prerelease)
 ```
 
-`make dist` = `./Scripts/make_dmg.sh`: release `swift build` → `package_app.sh` app bundle → staging folder with the app plus an `Applications` symlink → `diskutil image` (UDZO). The artifact is ad-hoc signed only; the resulting Gatekeeper friction for users is documented in [Install](#install).
+Prerequisite: bump the version in `Config/Info.plist` (`CFBundleShortVersionString` + `CFBundleVersion`; big changes bump minor, everything else patch) and **commit** — the tag points at HEAD, so the release is exactly the checked-out code.
+
+What `make release-gh` = `./Scripts/make_gh_release.sh` does:
+
+1. Preflight: `gh` installed and authenticated, on a branch (not detached HEAD), clean working tree, and no existing `v<version>` tag (local or on origin) or GitHub release
+2. `make_dmg.sh release` → `dist/NodeClubTracker-<version>.dmg` + `.sha256`
+3. Tag `v<version>`, push the branch and the tag
+4. `gh release create v<version>` with the DMG + `.sha256` attached; notes default to the commit subjects since the previous tag
+
+If a step fails after the tag push, the error message tells you how to clean up and retry. To build the artifact without publishing, `make dist` = `./Scripts/make_dmg.sh` (release `swift build` → `package_app.sh` → staging folder with the app plus an `Applications` symlink → `diskutil image` UDZO). The artifact is ad-hoc signed only; the resulting Gatekeeper friction for users is documented in [Install](#install).
 
 ## Credits
 
